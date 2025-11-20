@@ -340,21 +340,33 @@ export class AuthService {
     }
 
     try {
-      const { error } = await this.supabaseService.client
+      const cleanUpdates: any = {
+        updated_at: new Date().toISOString()
+      };
+
+      if (updates.full_name !== undefined) cleanUpdates.full_name = updates.full_name;
+      if (updates.role !== undefined) cleanUpdates.role = updates.role;
+      if (updates.autocenter !== undefined) cleanUpdates.autocenter = updates.autocenter;
+      if (updates.employee_number !== undefined) cleanUpdates.employee_number = updates.employee_number;
+      if (updates.is_active !== undefined) cleanUpdates.is_active = updates.is_active;
+
+      const { data, error } = await this.supabaseService.client
         .from('user_profiles')
-        .update(updates)
-        .eq('id', userId);
+        .update(cleanUpdates)
+        .eq('id', userId)
+        .select();
 
       if (error) {
-        return { success: false, message: 'Error al actualizar usuario' };
+        console.error('Update error:', error);
+        return { success: false, message: error.message || 'Error al actualizar usuario' };
       }
 
-      await this.logAction('update_user', { updated_user_id: userId, updates });
+      await this.logAction('update_user', { updated_user_id: userId, updates: cleanUpdates });
 
       return { success: true };
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error updating user:', error);
-      return { success: false, message: 'Error inesperado al actualizar usuario' };
+      return { success: false, message: error?.message || 'Error inesperado al actualizar usuario' };
     }
   }
 
